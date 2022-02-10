@@ -4,6 +4,20 @@
 
 class DemandSelectionTask{
     
+    String name = "Demand selection task";
+    color fill_col = 60;
+    int boundary_w = 200; 
+    int boundary_h = 20;
+
+    float[] card;
+    int stack;
+    color orange = #E89F00;
+    color green = #60E800;
+    color white = #D6D6D6;
+    color blue = #8188FF;
+    color purple = #C681FF;
+    boolean drawcard = false;
+
     float default_perc_hard_deck = 0.9f;
     float default_perc_easy_deck = 0.1f;
     int default_trials = 600;
@@ -22,6 +36,9 @@ class DemandSelectionTask{
     int current_answer;
     float[][] answers;
     int timer = 0;
+    static final int AWAITING_ANSWER = 0;
+    static final int AWAITING_STACKCHOICE = 1;
+    int state = 1; 
     
     DemandSelectionTask(
         int atrials, 
@@ -61,37 +78,110 @@ class DemandSelectionTask{
     int getTrials(){return trials;}
     
     float[] getNewCard(int stack){
-        float [] retval = zeros(cardvector_size);
-        current_stack = stack;
-        if (stack==0){ // easy
-            if (current_card_easy < trials)
-                retval = stack_easy[current_card_easy];
+        if(state == AWAITING_STACKCHOICE) {
+            float [] retval = zeros(cardvector_size);
+            current_stack = stack;
+            if (stack==0){ // easy
+                if (current_card_easy < trials)
+                    retval = stack_easy[current_card_easy];
+            }
+            else {
+                if (current_card_hard < trials)
+                    retval = stack_hard[current_card_hard];
+            }
+            state = AWAITING_ANSWER;
+            println("Dec demand task: Awaiting answer..");
+            card = retval;
+            drawcard = true;
+            return retval;
         }
-        else {
-            if (current_card_hard < trials)
-                retval = stack_hard[current_card_hard];
-        }
-        return retval;
+        return null;
     }
 
     void setAnswer(float answer){
-        answers[current_answer][0] = current_stack;
-        answers[current_answer][1] = current_stack == 0 ? current_card_easy : current_card_hard;
-        answers[current_answer][2] = answer;
-        
-        if(current_stack==0){
-            answers[current_answer][3] = (answer == correct_easy[current_card_easy] ? 0 : 1) ; // errors
+        if(state == AWAITING_ANSWER) {
+            answers[current_answer][0] = current_stack;
+            answers[current_answer][1] = current_stack == 0 ? current_card_easy : current_card_hard;
+            answers[current_answer][2] = answer;
+            
+            if(current_stack==0){
+                answers[current_answer][3] = (answer == correct_easy[current_card_easy] ? 0 : 1) ; // errors
+            }
+            else {
+                answers[current_answer][3] = (answer == correct_hard[current_card_hard] ? 0 : 1) ; // errors
+            }
+            current_answer++;
+            int tmp = current_stack == 0 ? current_card_easy++ : current_card_hard++;
+            println("Dec demand task: cur card easy = " + current_card_easy + "; hard = " + current_card_hard);
+            println("Dec demand task: Awaiting stack choice..");
+            drawcard = false;
+            state = AWAITING_STACKCHOICE;
         }
-        else {
-            answers[current_answer][3] = (answer == correct_hard[current_card_hard] ? 0 : 1) ; // errors
-        }
-        current_answer++;
-        int tmp = current_stack == 0 ? current_card_easy++ : current_card_hard++;
-        print("cur card easy = " + current_card_easy + "; hard = " + current_card_hard);
     }
 
     void tick(){
         timer++;
+    }
+
+    void draw() {
+        pushStyle();
+        fill(fill_col);
+        stroke(fill_col + 20);
+        rect(0, 0, boundary_w, boundary_h, 10);
+        popStyle();
+
+        // add name
+        translate(10, 20);
+        text(this.name, 0, 0);
+        translate(0, 50);
+        pushMatrix();
+            scale(0.4);
+            
+            // draw decks
+            int[] rem = this.getStackRemainingCounts();
+            int maxtrials = this.getTrials();
+            pushMatrix();
+            translate(100, 100);
+            drawStack(orange, rem[0], maxtrials);
+            popMatrix();
+
+            pushMatrix();
+            translate(300, 100);
+            drawStack(green, rem[1], maxtrials);
+            popMatrix();
+
+            if(drawcard){
+                int transl = stack == 0 ? 100 : 300;
+                pushMatrix();
+                translate(transl,50);
+                scale(5.5);
+                drawCard(card);
+                popMatrix();
+            }
+        popMatrix();
+        
+    }
+
+    void drawStack(color col, float remaining, float max){
+        pushStyle();
+        fill(col);
+        rectMode(CENTER);
+        rect(0, 0, 100, 100 * remaining/max);
+        popStyle();
+    }
+
+    void drawCard(float[] card){
+        int num = argmax(card, 0, 10);
+        color col = blue;
+        if(card[11] == 1)
+            col = purple;
+        pushStyle();
+        fill(white);
+        rectMode(CENTER);
+        rect(0,0,20,30);  
+        fill(col);
+        text(num, -5, 5);
+        popStyle();
     }
     
 
