@@ -78,9 +78,10 @@ class DemandSelectionTask{
     int getTrials(){return trials;}
     
     float[] getNewCard(int stack){
-        if(state == AWAITING_STACKCHOICE) {
+        if(this.state == AWAITING_STACKCHOICE) {
             float [] retval = zeros(cardvector_size);
             current_stack = stack;
+            println("Dec demand task: stack = " + stack);
             if (stack==0){ // easy
                 if (current_card_easy < trials)
                     retval = stack_easy[current_card_easy];
@@ -89,7 +90,7 @@ class DemandSelectionTask{
                 if (current_card_hard < trials)
                     retval = stack_hard[current_card_hard];
             }
-            state = AWAITING_ANSWER;
+            this.state = AWAITING_ANSWER;
             println("Dec demand task: Awaiting answer..");
             card = retval;
             drawcard = true;
@@ -112,7 +113,7 @@ class DemandSelectionTask{
             }
             current_answer++;
             int tmp = current_stack == 0 ? current_card_easy++ : current_card_hard++;
-            println("Dec demand task: cur card easy = " + current_card_easy + "; hard = " + current_card_hard);
+            // println("Dec demand task: cur card easy = " + current_card_easy + "; hard = " + current_card_hard);
             println("Dec demand task: Awaiting stack choice..");
             drawcard = false;
             state = AWAITING_STACKCHOICE;
@@ -151,7 +152,7 @@ class DemandSelectionTask{
             popMatrix();
 
             if(drawcard){
-                int transl = stack == 0 ? 100 : 300;
+                int transl = (current_stack == 0 ? 100 : 300);
                 pushMatrix();
                 translate(transl,50);
                 scale(5.5);
